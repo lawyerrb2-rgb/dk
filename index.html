@@ -165,10 +165,9 @@
 
         <!-- ================= TAB 3: BILLING GENERATOR ================= -->
         <section id="tab-billing" class="tab-content hidden">
-            <!-- คงฟังก์ชันหัวบิลและภาพพื้นหลังลายน้ำตามที่กำหนดไว้เดิม -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div class="bg-white p-6 rounded-2xl shadow-xs border border-slate-200 space-y-4 h-fit">
-                    <h2 class="text-lg font-bold text-slate-700"><i class="fa-solid fa-receipt mr-2 text-teal-500"></i>เครื่องมือออกบิล/พิมพ์ใบเสร็จ</h2>
+                    <h2 class="text-lg font-bold text-teal-500"><i class="fa-solid fa-receipt mr-2"></i>เครื่องมือออกบิล/พิมพ์ใบเสร็จ</h2>
                     <div>
                         <label class="block text-xs font-semibold text-slate-500 mb-1">ชนิดบิล</label>
                         <select id="bill-type" onchange="updateBillPreview()" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-sm focus:outline-teal-500">
@@ -261,8 +260,8 @@
 
     <script>
         // ================= CONFIGURE YOUR SUPABASE HERE =================
-        const SUPABASE_URL = "https://vztirsndyrelrtqjegsa.supabase.co"; 
-        const SUPABASE_ANON_KEY = "sb_publishable_iBj5DuUjJEhdFsNS4zOybA_dfkFFQ8z";
+        const SUPABASE_URL = "https://YOUR_SUPABASE_URL.supabase.co"; 
+        const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
         
         const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -279,13 +278,17 @@
 
         function setupSelectors() {
             const bSel = document.getElementById('tx-branch');
-            BRANCHES.forEach(b => bSel.innerHTML += `<option value="${b}">${b}</option>`);
+            if(bSel) {
+                BRANCHES.forEach(b => bSel.innerHTML += `<option value="${b}">${b}</option>`);
+            }
             toggleIceSelect();
         }
 
         function toggleIceSelect() {
             const type = document.getElementById('tx-type').value;
             const iceSel = document.getElementById('tx-ice');
+            if(!iceSel) return;
+            
             if(type === 'expense') {
                 iceSel.innerHTML = '<option value="รายจ่ายบริหาร">ค่าใช้จ่ายส่วนกลางดำเนินงาน</option>';
                 iceSel.disabled = true;
@@ -298,10 +301,11 @@
 
         function showLoading(status) {
             const spinner = document.getElementById('loading-spinner');
-            status ? spinner.classList.replace('hidden', 'flex') : spinner.classList.replace('flex', 'hidden');
+            if(spinner) {
+                status ? spinner.classList.replace('hidden', 'flex') : spinner.classList.replace('flex', 'hidden');
+            }
         }
 
-        // FETCH: ดึงข้อมูลจากคลาวด์ Supabase แบบเรียลไทม์
         async function fetchDataFromSupabase() {
             showLoading(true);
             try {
@@ -321,7 +325,6 @@
             }
         }
 
-        // INSERT: เพิ่มบันทึกบัญชีน้ำแข็งใหม่เข้า Supabase
         async function handleTransactionSubmit(e) {
             e.preventDefault();
             showLoading(true);
@@ -341,14 +344,13 @@
                 
                 document.getElementById('transaction-form').reset();
                 toggleIceSelect();
-                await fetchDataFromSupabase(); // รีเฟรชข้อมูลหน้าจอใหม่
+                await fetchDataFromSupabase();
             } catch (err) {
                 alert("ไม่สามารถบันทึกข้อมูลลงฐานข้อมูลได้: " + err.message);
                 showLoading(false);
             }
         }
 
-        // UPDATE: เปลี่ยนสถานะการจ่ายเงินของลูกค้า (Paid / Unpaid)
         async function switchPaymentStatus(id, currentStatus) {
             showLoading(true);
             const nextStatus = currentStatus === 'paid' ? 'unpaid' : 'paid';
@@ -366,7 +368,6 @@
             }
         }
 
-        // DELETE: ลบข้อมูลออกจากฐานข้อมูล
         async function removeTransaction(id) {
             if(!confirm("คุณแน่ใจว่าต้องการลบรายการบัญชีคลาวด์รายการนี้ถาวร?")) return;
             showLoading(true);
@@ -401,26 +402,30 @@
             document.getElementById('total-profit').innerText = `฿${(totalRev - totalExp).toLocaleString(undefined,{minimumFractionDigits:2})}`;
 
             const grid = document.getElementById('branch-cards-grid');
-            grid.innerHTML = '';
-            BRANCHES.forEach(b => {
-                const profit = branchStats[b].rev - branchStats[b].exp;
-                grid.innerHTML += `
-                    <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-200">
-                        <h4 class="font-bold text-slate-800 text-sm mb-3 truncate">${b}</h4>
-                        <div class="space-y-1 text-xs text-slate-500">
-                            <div class="flex justify-between"><span>รายรับสาขา:</span><span class="text-emerald-600 font-bold">฿${branchStats[b].rev.toLocaleString()}</span></div>
-                            <div class="flex justify-between"><span>รายจ่ายรวม:</span><span class="text-rose-600 font-bold">฿${branchStats[b].exp.toLocaleString()}</span></div>
+            if(grid) {
+                grid.innerHTML = '';
+                BRANCHES.forEach(b => {
+                    const profit = branchStats[b].rev - branchStats[b].exp;
+                    grid.innerHTML += `
+                        <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-200">
+                            <h4 class="font-bold text-slate-800 text-sm mb-3 truncate">${b}</h4>
+                            <div class="space-y-1 text-xs text-slate-500">
+                                <div class="flex justify-between"><span>รายรับสาขา:</span><span class="text-emerald-600 font-bold">฿${branchStats[b].rev.toLocaleString()}</span></div>
+                                <div class="flex justify-between"><span>รายจ่ายรวม:</span><span class="text-rose-600 font-bold">฿${branchStats[b].exp.toLocaleString()}</span></div>
+                            </div>
+                            <div class="border-t border-slate-100 pt-2 mt-3 flex justify-between text-xs font-bold">
+                                <span>กำไรสุทธิ:</span><span class="${profit>=0?'text-teal-600':'text-rose-600'}">฿${profit.toLocaleString()}</span>
+                            </div>
                         </div>
-                        <div class="border-t border-slate-100 pt-2 mt-3 flex justify-between text-xs font-bold">
-                            <span>กำไรสุทธิ:</span><span class="${profit>=0?'text-teal-600':'text-rose-600'}">฿${profit.toLocaleString()}</span>
-                        </div>
-                    </div>
-                `;
-            });
+                    `;
+                });
+            }
         }
 
         function renderTransactionsTable() {
             const tbody = document.getElementById('transaction-table-body');
+            if(!tbody) return;
+            
             const filter = document.getElementById('filter-status').value;
             tbody.innerHTML = '';
 
@@ -447,21 +452,19 @@
             });
         }
 
+        // แก้ไขระบบตรวจสอบแท็บแบบข้ามเบราว์เซอร์อย่างปลอดภัย
         function switchTab(tabId) {
-    // 1. ซ่อนทุกหน้าแท็บก่อน แล้วค่อยเปิดเฉพาะแท็บที่เลือก
-    document.querySelectorAll('.tab-content').forEach(el => el.classList.replace('block', 'hidden'));
-    document.getElementById(`tab-${tabId}`).classList.replace('hidden', 'block');
-    
-    // 2. ปรับสีไฮไลท์ปุ่มบนเมนูให้ถูกต้องตามการกด
-    document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.replace('bg-white/20', 'bg-white/10'));
-    
-    // ค้นหาปุ่มที่กดโดยตรงจากเป้าหมายที่เกิด Event
-    if (window.event && window.event.currentTarget) {
-        window.event.currentTarget.classList.replace('bg-white/10', 'bg-white/20');
-    } else if (typeof event !== 'undefined' && event.currentTarget) {
-        event.currentTarget.classList.replace('bg-white/10', 'bg-white/20');
-    }
-}
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.replace('block', 'hidden'));
+            document.getElementById(`tab-${tabId}`).classList.replace('hidden', 'block');
+            
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.replace('bg-white/20', 'bg-white/10'));
+            
+            if (window.event && window.event.currentTarget) {
+                window.event.currentTarget.classList.replace('bg-white/10', 'bg-white/20');
+            } else if (typeof event !== 'undefined' && event.currentTarget) {
+                event.currentTarget.classList.replace('bg-white/10', 'bg-white/20');
+            }
+        }
 
         function updateBillPreview() {
             document.getElementById('preview-bill-type').innerText = document.getElementById('bill-type').value;
@@ -472,7 +475,9 @@
         function updateWatermarkStyle() {
             const style = document.getElementById('bill-logo-style').value;
             const wm = document.getElementById('bill-watermark');
-            wm.innerHTML = style === 'ice-blue' ? '<i class="fa-solid fa-cubes text-[280px] text-cyan-400"></i>' : '';
+            if(wm) {
+                wm.innerHTML = style === 'ice-blue' ? '<i class="fa-solid fa-cubes text-[280px] text-cyan-400"></i>' : '';
+            }
         }
 
         async function downloadDocumentPDF() {
