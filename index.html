@@ -37,9 +37,9 @@
                 </div>
             </div>
             <div class="flex flex-wrap gap-2">
-                <button onclick="switchTab('dashboard')" class="nav-btn px-4 py-2 rounded-lg bg-white/20 hover:bg-white/30 transition text-sm font-medium"><i class="fa-solid fa-chart-pie mr-2"></i>ภาพรวมสาขา</button>
-                <button onclick="switchTab('sales')" class="nav-btn px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition text-sm font-medium"><i class="fa-solid fa-file-invoice-dollar mr-2"></i>บันทึกยอดขาย/ลูกหนี้</button>
-                <button onclick="switchTab('billing')" class="nav-btn px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition text-sm font-medium"><i class="fa-solid fa-print mr-2"></i>ออกเอกสารใบเสร็จ/บิล</button>
+                <button id="btn-dashboard" onclick="switchTab('dashboard')" class="nav-btn px-4 py-2 rounded-lg bg-white/20 hover:bg-white/30 transition text-sm font-medium"><i class="fa-solid fa-chart-pie mr-2"></i>ภาพรวมสาขา</button>
+                <button id="btn-sales" onclick="switchTab('sales')" class="nav-btn px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition text-sm font-medium"><i class="fa-solid fa-file-invoice-dollar mr-2"></i>บันทึกยอดขาย/ลูกหนี้</button>
+                <button id="btn-billing" onclick="switchTab('billing')" class="nav-btn px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition text-sm font-medium"><i class="fa-solid fa-print mr-2"></i>ออกเอกสารใบเสร็จ/บิล</button>
             </div>
         </div>
     </nav>
@@ -452,17 +452,32 @@
             });
         }
 
-        // แก้ไขระบบตรวจสอบแท็บแบบข้ามเบราว์เซอร์อย่างปลอดภัย
+        // ฟังก์ชันสลับหน้าต่างทำงานแบบควบคุมผ่าน ID (ตัดปัญหาเรื่องโครงสร้าง Object ของ Event ทิ้ง)
         function switchTab(tabId) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.replace('block', 'hidden'));
-            document.getElementById(`tab-${tabId}`).classList.replace('hidden', 'block');
+            // 1. ซ่อนหน้าจอทั้งหมดก่อน
+            document.querySelectorAll('.tab-content').forEach(el => {
+                el.classList.remove('block');
+                el.classList.add('hidden');
+            });
             
-            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.replace('bg-white/20', 'bg-white/10'));
+            // 2. เปิดหน้าจอแท็บที่เลือก
+            const activeTab = document.getElementById(`tab-${tabId}`);
+            if(activeTab) {
+                activeTab.classList.remove('hidden');
+                activeTab.classList.add('block');
+            }
             
-            if (window.event && window.event.currentTarget) {
-                window.event.currentTarget.classList.replace('bg-white/10', 'bg-white/20');
-            } else if (typeof event !== 'undefined' && event.currentTarget) {
-                event.currentTarget.classList.replace('bg-white/10', 'bg-white/20');
+            // 3. ปรับสีพื้นหลังปุ่มเมนูทั้งหมดให้เป็นสีจาง
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('bg-white/20');
+                btn.classList.add('bg-white/10');
+            });
+            
+            // 4. ไฮไลท์สีเข้มเฉพาะปุ่มที่เรากดโดยดึงจาก ID ปุ่ม
+            const activeBtn = document.getElementById(`btn-${tabId}`);
+            if(activeBtn) {
+                activeBtn.classList.remove('bg-white/10');
+                activeBtn.classList.add('bg-white/20');
             }
         }
 
