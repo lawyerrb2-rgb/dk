@@ -260,10 +260,11 @@
 
     <script>
         // ================= CONFIGURE YOUR SUPABASE HERE =================
+        // เปลี่ยนชื่อตัวแปรเป็น supabaseClient ป้องกันการซ้ำกับชื่อไลบรารีหลัก
         const SUPABASE_URL = "https://YOUR_SUPABASE_URL.supabase.co"; 
         const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
         
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         const ICE_TYPES = ["น้ำแข็งยูนิต (หลอดเล็ก)", "น้ำแข็งหลอดใหญ่", "น้ำแข็งก้อน (น้ำแข็งกั๊ก)", "น้ำแข็งบดละเอียด", "น้ำแข็งเกล็ดบริสุทธิ์", "น้ำแข็งแห้ง (Dry Ice)", "น้ำแข็งป่นสี่เหลี่ยม"];
         const BRANCHES = ["สาขาสำนักงานใหญ่", "สาขาตลาดเทศบาล", "สาขาหน้าท่าเรือ", "สาขาจุดกระจายสินค้าใต้"];
@@ -309,7 +310,7 @@
         async function fetchDataFromSupabase() {
             showLoading(true);
             try {
-                const { data, error } = await supabase
+                const { data, error } = await supabaseClient
                     .from('transactions')
                     .select('*')
                     .order('created_at', { ascending: false });
@@ -339,7 +340,7 @@
             };
 
             try {
-                const { error } = await supabase.from('transactions').insert([payload]);
+                const { error } = await supabaseClient.from('transactions').insert([payload]);
                 if (error) throw error;
                 
                 document.getElementById('transaction-form').reset();
@@ -355,7 +356,7 @@
             showLoading(true);
             const nextStatus = currentStatus === 'paid' ? 'unpaid' : 'paid';
             try {
-                const { error } = await supabase
+                const { error } = await supabaseClient
                     .from('transactions')
                     .update({ status: nextStatus })
                     .eq('id', id);
@@ -372,7 +373,7 @@
             if(!confirm("คุณแน่ใจว่าต้องการลบรายการบัญชีคลาวด์รายการนี้ถาวร?")) return;
             showLoading(true);
             try {
-                const { error } = await supabase.from('transactions').delete().eq('id', id);
+                const { error } = await supabaseClient.from('transactions').delete().eq('id', id);
                 if (error) throw error;
                 await fetchDataFromSupabase();
             } catch (err) {
@@ -452,28 +453,24 @@
             });
         }
 
-        // ฟังก์ชันสลับหน้าต่างทำงานแบบควบคุมผ่าน ID (ตัดปัญหาเรื่องโครงสร้าง Object ของ Event ทิ้ง)
+        // ฟังก์ชันสลับหน้าต่างทำงานแบบปลอดภัยไร้กังวล
         function switchTab(tabId) {
-            // 1. ซ่อนหน้าจอทั้งหมดก่อน
             document.querySelectorAll('.tab-content').forEach(el => {
                 el.classList.remove('block');
                 el.classList.add('hidden');
             });
             
-            // 2. เปิดหน้าจอแท็บที่เลือก
             const activeTab = document.getElementById(`tab-${tabId}`);
             if(activeTab) {
                 activeTab.classList.remove('hidden');
                 activeTab.classList.add('block');
             }
             
-            // 3. ปรับสีพื้นหลังปุ่มเมนูทั้งหมดให้เป็นสีจาง
             document.querySelectorAll('.nav-btn').forEach(btn => {
                 btn.classList.remove('bg-white/20');
                 btn.classList.add('bg-white/10');
             });
             
-            // 4. ไฮไลท์สีเข้มเฉพาะปุ่มที่เรากดโดยดึงจาก ID ปุ่ม
             const activeBtn = document.getElementById(`btn-${tabId}`);
             if(activeBtn) {
                 activeBtn.classList.remove('bg-white/10');
