@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IceBiz Online - ระบบบัญชีโรงน้ำแข็งเรียลไทม์</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- PDF Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- Supabase JS Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: 'Prompt', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen pb-12">
+
+    <!-- ส่วนแถบเมนูด้านบน -->
+    <nav class="bg-gradient-to-r from-teal-600 to-cyan-600 text-white shadow-md px-6 py-4 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <i class="fa-solid fa-cloud-bolt text-3xl animate-pulse"></i>
+                <div>
+                    <h1 class="text-xl font-bold tracking-wide">IceBiz Cloud Accounting</h1>
+                    <p class="text-xs text-teal-100 flex items-center gap-1">
+                        <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span> 
+                        ระบบออนไลน์ฐานข้อมูล Supabase เรียลไทม์
+                    </p>
+                </div>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                <button onclick="switchTab('dashboard')" class="nav-btn px-4 py-2 rounded-lg bg-white/20 hover:bg-white/30 transition text-sm font-medium"><i class="fa-solid fa-chart-pie mr-2"></i>ภาพรวมสาขา</button>
+                <button onclick="switchTab('sales')" class="nav-btn px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition text-sm font-medium"><i class="fa-solid fa-file-invoice-dollar mr-2"></i>บันทึกยอดขาย/ลูกหนี้</button>
+                <button onclick="switchTab('billing')" class="nav-btn px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition text-sm font-medium"><i class="fa-solid fa-print mr-2"></i>ออกเอกสารใบเสร็จ/บิล</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ส่วนเนื้อหาหลัก -->
+    <main class="max-w-7xl mx-auto px-4 mt-8">
+
+        <!-- สัญลักษณ์ระบุว่าระบบกำลังดาวน์โหลดข้อมูลจากระบบคลาวด์ -->
+        <div id="loading-spinner" class="hidden fixed inset-0 bg-slate-900/40 z-50 flex items-center justify-center backdrop-blur-xs">
+            <div class="bg-white p-6 rounded-2xl shadow-xl flex flex-col items-center gap-3">
+                <i class="fa-solid fa-circle-notch text-4xl text-teal-600 animate-spin"></i>
+                <p class="text-sm font-medium text-slate-600">กำลังเชื่อมโยงฐานข้อมูลคลาวด์...</p>
+            </div>
+        </div>
+
+        <!-- ================= TAB 1: DASHBOARD ================= -->
+        <section id="tab-dashboard" class="tab-content block">
+            <h2 class="text-lg font-bold mb-4 text-slate-700"><i class="fa-solid fa-globe mr-2 text-teal-500"></i>สรุปยอดรวมทางการเงินสุทธิ (ทุกสาขา)</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="bg-white p-6 rounded-2xl shadow-xs border border-slate-100 flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-slate-500 font-medium">รายรับออนไลน์สะสม</p>
+                        <h3 id="total-revenue" class="text-3xl font-bold text-emerald-600 mt-1">฿0.00</h3>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-500 text-xl"><i class="fa-solid fa-arrow-trend-up"></i></div>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-xs border border-slate-100 flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-slate-500 font-medium">รายจ่ายดำเนินงานสะสม</p>
+                        <h3 id="total-expense" class="text-3xl font-bold text-rose-600 mt-1">฿0.00</h3>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-rose-50 flex items-center justify-center text-rose-500 text-xl"><i class="fa-solid fa-arrow-trend-down"></i></div>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-xs border border-slate-100 flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-slate-500 font-medium">กำไรสุทธิรวม</p>
+                        <h3 id="total-profit" class="text-3xl font-bold text-cyan-600 mt-1">฿0.00</h3>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-cyan-50 flex items-center justify-center text-cyan-500 text-xl"><i class="fa-solid fa-scale-balanced"></i></div>
+                </div>
+            </div>
+
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-bold text-slate-700"><i class="fa-solid fa-code-branch mr-2 text-cyan-500"></i>งบแยกย่อยจำแนกรายสาขา</h2>
+                <button onclick="fetchDataFromSupabase()" class="text-xs bg-white border border-slate-200 shadow-xs hover:bg-slate-50 text-slate-600 px-3 py-1.5 rounded-lg transition"><i class="fa-solid fa-rotate mr-1"></i>ดึงข้อมูลล่าสุด</button>
+            </div>
+            <div id="branch-cards-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"></div>
+        </section>
+
+        <!-- ================= TAB 2: SALES & DEBTORS ================= -->
+        <section id="tab-sales" class="tab-content hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- ฟอร์มส่งข้อมูลขึ้นระบบคลาวด์ -->
+                <div class="bg-white p-6 rounded-2xl shadow-xs border border-slate-200 h-fit">
+                    <h2 class="text-lg font-bold mb-4 text-slate-700"><i class="fa-solid fa-cloud-arrow-up mr-2 text-teal-500"></i>เพิ่มธุรกรรมใหม่เข้าฐานข้อมูล</h2>
+                    <form id="transaction-form" onsubmit="handleTransactionSubmit(event)" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 mb-1">เลือกสาขา</label>
+                            <select id="tx-branch" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-sm focus:outline-teal-500" required></select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 mb-1">ชื่อลูกค้า / รายการฝั่งขวา</label>
+                            <input type="text" id="tx-customer" placeholder="เช่น ร้านส้มตำป้าศรี หรือ ค่าน้ำมันขนส่ง" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-sm focus:outline-teal-500" required>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-500 mb-1">หมวดบัญชี</label>
+                                <select id="tx-type" onchange="toggleIceSelect()" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-sm focus:outline-teal-500">
+                                    <option value="revenue">รายรับ (ขายน้ำแข็ง)</option>
+                                    <option value="expense">รายจ่าย (ต้นทุน/บริหาร)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-500 mb-1">ชนิดน้ำแข็ง</label>
+                                <select id="tx-ice" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-sm focus:outline-teal-500"></select>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-500 mb-1">จำนวนยอดเงิน (บาท)</label>
+                                <input type="number" id="tx-amount" min="1" step="any" placeholder="0.00" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-sm focus:outline-teal-500" required>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-500 mb-1">สถานะชำระเงิน</label>
+                                <select id="tx-status" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-sm focus:outline-teal-500">
+                                    <option value="paid">ชำระเงินเรียบร้อยแล้ว</option>
+                                    <option value="unpaid">ยังไม่ชำระ (ค้างจ่าย)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button type="submit" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-medium text-sm py-3 rounded-lg shadow-xs transition mt-2"><i class="fa-solid fa-paper-plane mr-2"></i>อัปโหลดขึ้นระบบออนไลน์</button>
+                    </form>
+                </div>
+
+                <!-- ตารางบันทึกสถานะการชำระเงินดึงข้อมูลแบบไดนามิก -->
+                <div class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-xs border border-slate-200">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+                        <h2 class="text-lg font-bold text-slate-700"><i class="fa-solid fa-database mr-2 text-cyan-500"></i>คลังข้อมูลลูกหนี้และสถานะค้างจ่าย</h2>
+                        <select id="filter-status" onchange="renderTransactionsTable()" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-teal-500">
+                            <option value="all">แสดงรายการเก็บเงินทั้งหมด</option>
+                            <option value="paid">ลูกค้าที่จ่ายเงินแล้ว</option>
+                            <option value="unpaid">ลูกค้าค้างเงินชำระ</option>
+                        </select>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-slate-50 text-slate-500 text-xs tracking-wider border-b border-slate-100">
+                                <tr>
+                                    <th class="p-3">ลูกค้า / รายการ</th>
+                                    <th class="p-3">จุดประจำสาขา</th>
+                                    <th class="p-3">ชนิดน้ำแข็ง</th>
+                                    <th class="p-3 text-right">ยอดเงินสุทธิ</th>
+                                    <th class="p-3 text-center">สถานะการชำระ</th>
+                                    <th class="p-3 text-center">คลาวด์แอกชัน</th>
+                                </tr>
+                            </thead>
+                            <tbody id="transaction-table-body" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= TAB 3: BILLING GENERATOR ================= -->
+        <section id="tab-billing" class="tab-content hidden">
+            <!-- คงฟังก์ชันหัวบิลและภาพพื้นหลังลายน้ำตามที่กำหนดไว้เดิม -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="bg-white p-6 rounded-2xl shadow-xs border border-slate-200 space-y-4 h-fit">
+                    <h2 class="text-lg font-bold text-slate-700"><i class="fa-solid fa-receipt mr-2 text-teal-500"></i>เครื่องมือออกบิล/พิมพ์ใบเสร็จ</h2>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 mb-1">ชนิดบิล</label>
+                        <select id="bill-type" onchange="updateBillPreview()" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-sm focus:outline-teal-500">
+                            <option value="ใบเสนอราคา">ใบเสนอราคา (Quotation)</option>
+                            <option value="ใบวางบิล">ใบวางบิล (Invoice/Billing)</option>
+                            <option value="ใบเสร็จรับเงิน">ใบเสร็จรับเงิน (Receipt)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 mb-1">หัวข้อชื่อโรงน้ำแข็ง</label>
+                        <input type="text" id="bill-factory-name" value="โรงน้ำแข็งทวีทรัพย์ อินเตอร์เนชั่นแนล" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-sm focus:outline-teal-500" oninput="updateBillPreview()">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 mb-1">ชื่อผู้รับ / ลูกค้าหลัก</label>
+                        <input type="text" id="bill-cust-name" value="ร้านอาหารริมหาดซีฟู้ด" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-sm focus:outline-teal-500" oninput="updateBillPreview()">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 mb-1">สัญลักษณ์ลายน้ำหลังบิล</label>
+                        <select id="bill-logo-style" onchange="updateWatermarkStyle()" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-sm focus:outline-teal-500">
+                            <option value="ice-blue">โลโก้ก้อนน้ำแข็งเหลี่ยมสีฟ้าใส</option>
+                            <option value="none">ไม่ระบุภาพพื้นหลัง</option>
+                        </select>
+                    </div>
+                    <div class="pt-2 flex gap-2">
+                        <button onclick="window.print()" class="flex-1 bg-slate-800 hover:bg-slate-900 text-white font-medium text-xs py-2.5 rounded-lg transition"><i class="fa-solid fa-print mr-2"></i>พิมพ์เอกสาร</button>
+                        <button onclick="downloadDocumentPDF()" class="flex-1 bg-teal-600 hover:bg-teal-700 text-white font-medium text-xs py-2.5 rounded-lg transition"><i class="fa-solid fa-file-pdf mr-2"></i>เซฟเป็น PDF</button>
+                    </div>
+                </div>
+
+                <!-- บริเวณแสดงการจำลองแผ่นกระดาษพิมพ์ใบเสนอราคา/ใบวางบิล -->
+                <div class="lg:col-span-2 bg-slate-300 p-4 rounded-2xl overflow-x-auto flex justify-center">
+                    <div id="bill-capture-area" class="w-[794px] h-[1123px] bg-white p-12 shadow-xl relative text-slate-800 flex flex-col justify-between shrink-0">
+                        <div id="bill-watermark" class="absolute inset-0 flex items-center justify-center opacity-[0.06] pointer-events-none z-0">
+                            <i class="fa-solid fa-cubes text-[300px] text-sky-400"></i>
+                        </div>
+                        
+                        <div class="relative z-10">
+                            <div class="flex justify-between items-start border-b-2 border-teal-600 pb-6">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-12 h-12 rounded-xl bg-teal-600 flex items-center justify-center text-white text-2xl"><i class="fa-solid fa-snowflake"></i></div>
+                                    <div>
+                                        <h3 id="preview-factory-name" class="font-bold text-lg text-slate-900">โรงน้ำแข็งทวีทรัพย์ อินเตอร์เนชั่นแนล</h3>
+                                        <p class="text-xs text-slate-500 mt-0.5">ระบบเชื่อมต่อบัญชีอัตโนมัติคลาวด์ประจำภูมิภาค</p>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <h2 id="preview-bill-type" class="text-2xl font-black text-teal-600">ใบวางบิล</h2>
+                                    <p class="text-xs text-slate-500 mt-1 font-mono">ระบบออนไลน์สร้างเอกสารอัตโนมัติ</p>
+                                </div>
+                            </div>
+
+                            <div class="my-6 text-xs bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                <p class="font-bold text-slate-400 text-[10px] uppercase mb-1">ชื่อผู้ออกเอกสาร / ผู้รับเงินปลายทาง</p>
+                                <p id="preview-cust-name" class="font-semibold text-sm text-slate-900">ร้านอาหารริมหาดซีฟู้ด</p>
+                            </div>
+
+                            <table class="w-full text-xs text-left mt-8">
+                                <thead class="bg-teal-600 text-white text-[10px] uppercase">
+                                    <tr>
+                                        <th class="p-3 rounded-l-lg">#</th>
+                                        <th class="p-3">ประเภทน้ำแข็งที่ทำรายงานซื้อขาย</th>
+                                        <th class="p-3 text-right">จำนวนประเมินสุทธิ</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="p-3 text-slate-400">01</td>
+                                        <td class="p-3 font-semibold text-slate-900">การเหมาจ่ายจัดส่งน้ำแข็งตามสาขารวมล็อตล่าสุด</td>
+                                        <td class="p-3 text-right font-mono font-bold text-teal-700">คำนวณตามงบเลือกแสดงผลเดี่ยว</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="relative z-10 border-t border-slate-200 pt-6 grid grid-cols-2 gap-8 text-center text-xs">
+                            <div>
+                                <p>......................................................</p>
+                                <p class="text-[10px] text-slate-400 mt-1">เจ้าหน้าที่ผู้รับมอบน้ำแข็ง</p>
+                            </div>
+                            <div>
+                                <i class="fa-solid fa-stamp text-teal-700 text-3xl opacity-50 block mb-2"></i>
+                                <p>......................................................</p>
+                                <p class="text-[10px] text-slate-400 mt-1">ผู้มีอำนาจลงนาม / ฝ่ายบัญชีโรงงาน</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+    <script>
+        // ================= CONFIGURE YOUR SUPABASE HERE =================
+        const SUPABASE_URL = "https://vztirsndyrelrtqjegsa.supabase.co"; 
+        const SUPABASE_ANON_KEY = "sb_publishable_iBj5DuUjJEhdFsNS4zOybA_dfkFFQ8z";
+        
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        const ICE_TYPES = ["น้ำแข็งยูนิต (หลอดเล็ก)", "น้ำแข็งหลอดใหญ่", "น้ำแข็งก้อน (น้ำแข็งกั๊ก)", "น้ำแข็งบดละเอียด", "น้ำแข็งเกล็ดบริสุทธิ์", "น้ำแข็งแห้ง (Dry Ice)", "น้ำแข็งป่นสี่เหลี่ยม"];
+        const BRANCHES = ["สาขาสำนักงานใหญ่", "สาขาตลาดเทศบาล", "สาขาหน้าท่าเรือ", "สาขาจุดกระจายสินค้าใต้"];
+        
+        let localTransactions = [];
+
+        window.onload = function() {
+            setupSelectors();
+            fetchDataFromSupabase();
+            updateBillPreview();
+        };
+
+        function setupSelectors() {
+            const bSel = document.getElementById('tx-branch');
+            BRANCHES.forEach(b => bSel.innerHTML += `<option value="${b}">${b}</option>`);
+            toggleIceSelect();
+        }
+
+        function toggleIceSelect() {
+            const type = document.getElementById('tx-type').value;
+            const iceSel = document.getElementById('tx-ice');
+            if(type === 'expense') {
+                iceSel.innerHTML = '<option value="รายจ่ายบริหาร">ค่าใช้จ่ายส่วนกลางดำเนินงาน</option>';
+                iceSel.disabled = true;
+            } else {
+                iceSel.disabled = false;
+                iceSel.innerHTML = '';
+                ICE_TYPES.forEach(ice => iceSel.innerHTML += `<option value="${ice}">${ice}</option>`);
+            }
+        }
+
+        function showLoading(status) {
+            const spinner = document.getElementById('loading-spinner');
+            status ? spinner.classList.replace('hidden', 'flex') : spinner.classList.replace('flex', 'hidden');
+        }
+
+        // FETCH: ดึงข้อมูลจากคลาวด์ Supabase แบบเรียลไทม์
+        async function fetchDataFromSupabase() {
+            showLoading(true);
+            try {
+                const { data, error } = await supabase
+                    .from('transactions')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+                localTransactions = data || [];
+                calculateFinanceReport();
+                renderTransactionsTable();
+            } catch (err) {
+                alert("เกิดข้อผิดพลาดในการโหลดข้อมูลคลาวด์: " + err.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // INSERT: เพิ่มบันทึกบัญชีน้ำแข็งใหม่เข้า Supabase
+        async function handleTransactionSubmit(e) {
+            e.preventDefault();
+            showLoading(true);
+
+            const payload = {
+                branch: document.getElementById('tx-branch').value,
+                customer: document.getElementById('tx-customer').value,
+                type: document.getElementById('tx-type').value,
+                ice: document.getElementById('tx-ice').value,
+                amount: parseFloat(document.getElementById('tx-amount').value),
+                status: document.getElementById('tx-status').value
+            };
+
+            try {
+                const { error } = await supabase.from('transactions').insert([payload]);
+                if (error) throw error;
+                
+                document.getElementById('transaction-form').reset();
+                toggleIceSelect();
+                await fetchDataFromSupabase(); // รีเฟรชข้อมูลหน้าจอใหม่
+            } catch (err) {
+                alert("ไม่สามารถบันทึกข้อมูลลงฐานข้อมูลได้: " + err.message);
+                showLoading(false);
+            }
+        }
+
+        // UPDATE: เปลี่ยนสถานะการจ่ายเงินของลูกค้า (Paid / Unpaid)
+        async function switchPaymentStatus(id, currentStatus) {
+            showLoading(true);
+            const nextStatus = currentStatus === 'paid' ? 'unpaid' : 'paid';
+            try {
+                const { error } = await supabase
+                    .from('transactions')
+                    .update({ status: nextStatus })
+                    .eq('id', id);
+
+                if (error) throw error;
+                await fetchDataFromSupabase();
+            } catch (err) {
+                alert("ปรับปรุงสถานะเงินค้างชำระไม่สำเร็จ: " + err.message);
+                showLoading(false);
+            }
+        }
+
+        // DELETE: ลบข้อมูลออกจากฐานข้อมูล
+        async function removeTransaction(id) {
+            if(!confirm("คุณแน่ใจว่าต้องการลบรายการบัญชีคลาวด์รายการนี้ถาวร?")) return;
+            showLoading(true);
+            try {
+                const { error } = await supabase.from('transactions').delete().eq('id', id);
+                if (error) throw error;
+                await fetchDataFromSupabase();
+            } catch (err) {
+                alert("ลบข้อมูลไม่สำเร็จ: " + err.message);
+                showLoading(false);
+            }
+        }
+
+        function calculateFinanceReport() {
+            let totalRev = 0, totalExp = 0;
+            let branchStats = {};
+            BRANCHES.forEach(b => branchStats[b] = { rev: 0, exp: 0 });
+
+            localTransactions.forEach(t => {
+                const amt = parseFloat(t.amount);
+                if(t.type === 'revenue') {
+                    totalRev += amt;
+                    if(branchStats[t.branch]) branchStats[t.branch].rev += amt;
+                } else {
+                    totalExp += amt;
+                    if(branchStats[t.branch]) branchStats[t.branch].exp += amt;
+                }
+            });
+
+            document.getElementById('total-revenue').innerText = `฿${totalRev.toLocaleString(undefined,{minimumFractionDigits:2})}`;
+            document.getElementById('total-expense').innerText = `฿${totalExp.toLocaleString(undefined,{minimumFractionDigits:2})}`;
+            document.getElementById('total-profit').innerText = `฿${(totalRev - totalExp).toLocaleString(undefined,{minimumFractionDigits:2})}`;
+
+            const grid = document.getElementById('branch-cards-grid');
+            grid.innerHTML = '';
+            BRANCHES.forEach(b => {
+                const profit = branchStats[b].rev - branchStats[b].exp;
+                grid.innerHTML += `
+                    <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-200">
+                        <h4 class="font-bold text-slate-800 text-sm mb-3 truncate">${b}</h4>
+                        <div class="space-y-1 text-xs text-slate-500">
+                            <div class="flex justify-between"><span>รายรับสาขา:</span><span class="text-emerald-600 font-bold">฿${branchStats[b].rev.toLocaleString()}</span></div>
+                            <div class="flex justify-between"><span>รายจ่ายรวม:</span><span class="text-rose-600 font-bold">฿${branchStats[b].exp.toLocaleString()}</span></div>
+                        </div>
+                        <div class="border-t border-slate-100 pt-2 mt-3 flex justify-between text-xs font-bold">
+                            <span>กำไรสุทธิ:</span><span class="${profit>=0?'text-teal-600':'text-rose-600'}">฿${profit.toLocaleString()}</span>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function renderTransactionsTable() {
+            const tbody = document.getElementById('transaction-table-body');
+            const filter = document.getElementById('filter-status').value;
+            tbody.innerHTML = '';
+
+            localTransactions.forEach(t => {
+                if(filter !== 'all' && t.status !== filter) return;
+
+                const statusBadge = t.status === 'paid' 
+                    ? '<span class="px-2 py-0.5 text-[10px] font-semibold bg-emerald-100 text-emerald-800 rounded-full">ชำระแล้ว</span>'
+                    : '<span class="px-2 py-0.5 text-[10px] font-semibold bg-amber-100 text-amber-800 rounded-full">ค้างชำระ</span>';
+
+                tbody.innerHTML += `
+                    <tr class="text-xs hover:bg-slate-50">
+                        <td class="p-3 font-semibold text-slate-800">${t.customer}</td>
+                        <td class="p-3 text-slate-500">${t.branch}</td>
+                        <td class="p-3 text-slate-600">${t.ice}</td>
+                        <td class="p-3 text-right font-mono font-bold">฿${parseFloat(t.amount).toLocaleString()}</td>
+                        <td class="p-3 text-center">${statusBadge}</td>
+                        <td class="p-3 text-center flex gap-1 justify-center">
+                            <button onclick="switchPaymentStatus(${t.id}, '${t.status}')" class="text-slate-400 hover:text-teal-600 p-1" title="เปลี่ยนสถานะเงิน"><i class="fa-solid fa-arrows-rotate"></i></button>
+                            <button onclick="removeTransaction(${t.id})" class="text-slate-400 hover:text-rose-600 p-1" title="ลบข้อมูล"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.replace('block', 'hidden'));
+            document.getElementById(`tab-${tabId}`).classList.replace('hidden', 'block');
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.replace('bg-white/20', 'bg-white/10'));
+            event.currentTarget.classList.replace('bg-white/10', 'bg-white/20');
+        }
+
+        function updateBillPreview() {
+            document.getElementById('preview-bill-type').innerText = document.getElementById('bill-type').value;
+            document.getElementById('preview-factory-name').innerText = document.getElementById('bill-factory-name').value;
+            document.getElementById('preview-cust-name').innerText = document.getElementById('bill-cust-name').value;
+        }
+
+        function updateWatermarkStyle() {
+            const style = document.getElementById('bill-logo-style').value;
+            const wm = document.getElementById('bill-watermark');
+            wm.innerHTML = style === 'ice-blue' ? '<i class="fa-solid fa-cubes text-[280px] text-cyan-400"></i>' : '';
+        }
+
+        async function downloadDocumentPDF() {
+            const { jsPDF } = window.jspdf;
+            const element = document.getElementById('bill-capture-area');
+            const canvas = await html2canvas(element, { scale: 2 });
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            pdf.addImage(imgData, 'PNG', 0, 0, 210, (canvas.height * 210) / canvas.width);
+            pdf.save(`${document.getElementById('bill-type').value}_Report.pdf`);
+        }
+    </script>
+</body>
+</html>
