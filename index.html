@@ -448,11 +448,20 @@
         }
 
         function switchTab(tabId) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.replace('block', 'hidden'));
-            document.getElementById(`tab-${tabId}`).classList.replace('hidden', 'block');
-            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.replace('bg-white/20', 'bg-white/10'));
-            event.currentTarget.classList.replace('bg-white/10', 'bg-white/20');
-        }
+    // 1. ซ่อนทุกหน้าแท็บก่อน แล้วค่อยเปิดเฉพาะแท็บที่เลือก
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.replace('block', 'hidden'));
+    document.getElementById(`tab-${tabId}`).classList.replace('hidden', 'block');
+    
+    // 2. ปรับสีไฮไลท์ปุ่มบนเมนูให้ถูกต้องตามการกด
+    document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.replace('bg-white/20', 'bg-white/10'));
+    
+    // ค้นหาปุ่มที่กดโดยตรงจากเป้าหมายที่เกิด Event
+    if (window.event && window.event.currentTarget) {
+        window.event.currentTarget.classList.replace('bg-white/10', 'bg-white/20');
+    } else if (typeof event !== 'undefined' && event.currentTarget) {
+        event.currentTarget.classList.replace('bg-white/10', 'bg-white/20');
+    }
+}
 
         function updateBillPreview() {
             document.getElementById('preview-bill-type').innerText = document.getElementById('bill-type').value;
