@@ -55,38 +55,48 @@
             </div>
         </div>
 
-        <!-- ================= TAB 1: DASHBOARD ================= -->
+        <!-- ================= TAB 1: DASHBOARD (ปรับปรุงแถบสรุปเงินใหม่) ================= -->
         <section id="tab-dashboard" class="tab-content block">
-            <h2 class="text-lg font-bold mb-4 text-slate-700"><i class="fa-solid fa-globe mr-2 text-teal-500"></i>สรุปยอดรวมทางการเงินสุทธิ (ทุกสาขา)</h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <h2 class="text-lg font-bold mb-4 text-slate-700"><i class="fa-solid fa-globe mr-2 text-teal-500"></i>สรุปภาพรวมกระแสเงินสดและผลประกอบการ (ทุกสาขารวมกัน)</h2>
+            
+            <!-- การ์ดภาพรวมส่วนบนแบ่งรายละเอียดชัดเจนขึ้น -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <div class="bg-white p-6 rounded-2xl shadow-xs border border-slate-100 flex items-center justify-between">
                     <div>
-                        <p class="text-sm text-slate-500 font-medium">รายรับออนไลน์สะสม</p>
-                        <h3 id="total-revenue" class="text-3xl font-bold text-emerald-600 mt-1">฿0.00</h3>
+                        <p class="text-sm text-slate-500 font-medium">1. รายรับจริง (ได้รับเงินแล้ว)</p>
+                        <h3 id="total-paid-revenue" class="text-2xl font-bold text-emerald-600 mt-1">฿0.00</h3>
                     </div>
-                    <div class="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-500 text-xl"><i class="fa-solid fa-arrow-trend-up"></i></div>
+                    <div class="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-500 text-xl"><i class="fa-solid fa-money-bill-wave"></i></div>
                 </div>
                 <div class="bg-white p-6 rounded-2xl shadow-xs border border-slate-100 flex items-center justify-between">
                     <div>
-                        <p class="text-sm text-slate-500 font-medium">รายจ่ายดำเนินงานสะสม</p>
-                        <h3 id="total-expense" class="text-3xl font-bold text-rose-600 mt-1">฿0.00</h3>
+                        <p class="text-sm text-slate-500 font-medium">2. ค้างจ่าย (ยังไม่ได้รับเงิน)</p>
+                        <h3 id="total-unpaid-revenue" class="text-2xl font-bold text-amber-600 mt-1">฿0.00</h3>
                     </div>
-                    <div class="w-12 h-12 rounded-xl bg-rose-50 flex items-center justify-center text-rose-500 text-xl"><i class="fa-solid fa-arrow-trend-down"></i></div>
+                    <div class="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center text-amber-500 text-xl"><i class="fa-solid fa-clock-rotate-left"></i></div>
                 </div>
                 <div class="bg-white p-6 rounded-2xl shadow-xs border border-slate-100 flex items-center justify-between">
                     <div>
-                        <p class="text-sm text-slate-500 font-medium">กำไรสุทธิรวม</p>
-                        <h3 id="total-profit" class="text-3xl font-bold text-cyan-600 mt-1">฿0.00</h3>
+                        <p class="text-sm text-slate-500 font-medium">3. รายรับรวมทั้งหมด</p>
+                        <h3 id="total-gross-revenue" class="text-2xl font-bold text-slate-800 mt-1">฿0.00</h3>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-slate-50 flex items-center justify-center text-slate-500 text-xl"><i class="fa-solid fa-vault"></i></div>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-xs border border-slate-100 flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-slate-500 font-medium">รายจ่าย / กำไรสุทธิจริง</p>
+                        <h3 id="total-net-profit" class="text-xl font-bold text-cyan-600 mt-1">฿0.00</h3>
+                        <p id="total-expense-sub" class="text-[11px] text-rose-500 font-medium mt-0.5">รายจ่ายสะสม: ฿0.00</p>
                     </div>
                     <div class="w-12 h-12 rounded-xl bg-cyan-50 flex items-center justify-center text-cyan-500 text-xl"><i class="fa-solid fa-scale-balanced"></i></div>
                 </div>
             </div>
 
             <div class="flex justify-between items-center mb-4">
-                <h2 class="text-lg font-bold text-slate-700"><i class="fa-solid fa-code-branch mr-2 text-cyan-500"></i>งบแยกย่อยจำแนกรายสาขา</h2>
+                <h2 class="text-lg font-bold text-slate-700"><i class="fa-solid fa-code-branch mr-2 text-cyan-500"></i>งบการเงินจำแนกรายสาขาแบบละเอียด</h2>
                 <button onclick="fetchDataFromSupabase()" class="text-xs bg-white border border-slate-200 shadow-xs hover:bg-slate-50 text-slate-600 px-3 py-1.5 rounded-lg transition"><i class="fa-solid fa-rotate mr-1"></i>ดึงข้อมูลล่าสุด</button>
             </div>
-            <div id="branch-cards-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"></div>
+            <div id="branch-cards-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6"></div>
         </section>
 
         <!-- ================= TAB 2: SALES & DEBTORS ================= -->
@@ -260,7 +270,6 @@
 
     <script>
         // ================= CONFIGURE YOUR SUPABASE HERE =================
-        // เปลี่ยนชื่อตัวแปรเป็น supabaseClient ป้องกันการซ้ำกับชื่อไลบรารีหลัก
         const SUPABASE_URL = "https://vztirsndyrelrtqjegsa.supabase.co"; 
         const SUPABASE_ANON_KEY = "sb_publishable_iBj5DuUjJEhdFsNS4zOybA_dfkFFQ8z";
         
@@ -382,40 +391,88 @@
             }
         }
 
+        // 🛠️ ฟังก์ชันการคำนวณแยก 1.รายรับจริง 2.ยังไม่ได้รับ 3.รายรับรวม
         function calculateFinanceReport() {
-            let totalRev = 0, totalExp = 0;
+            let totalPaidRev = 0, totalUnpaidRev = 0, totalExp = 0;
+            
             let branchStats = {};
-            BRANCHES.forEach(b => branchStats[b] = { rev: 0, exp: 0 });
+            BRANCHES.forEach(b => {
+                branchStats[b] = { 
+                    paidRev: 0,    // 1. รายรับจริง (จ่ายแล้ว)
+                    unpaidRev: 0,  // 2. รายรับที่ยังไม่ได้รับ (ค้างจ่าย)
+                    grossRev: 0,   // 3. รายรับรวม (รับแล้ว + ค้าง)
+                    exp: 0         // รายจ่ายสาขา
+                };
+            });
 
             localTransactions.forEach(t => {
                 const amt = parseFloat(t.amount);
                 if(t.type === 'revenue') {
-                    totalRev += amt;
-                    if(branchStats[t.branch]) branchStats[t.branch].rev += amt;
+                    if(t.status === 'paid') {
+                        totalPaidRev += amt;
+                        if(branchStats[t.branch]) branchStats[t.branch].paidRev += amt;
+                    } else {
+                        totalUnpaidRev += amt;
+                        if(branchStats[t.branch]) branchStats[t.branch].unpaidRev += amt;
+                    }
                 } else {
                     totalExp += amt;
                     if(branchStats[t.branch]) branchStats[t.branch].exp += amt;
                 }
             });
 
-            document.getElementById('total-revenue').innerText = `฿${totalRev.toLocaleString(undefined,{minimumFractionDigits:2})}`;
-            document.getElementById('total-expense').innerText = `฿${totalExp.toLocaleString(undefined,{minimumFractionDigits:2})}`;
-            document.getElementById('total-profit').innerText = `฿${(totalRev - totalExp).toLocaleString(undefined,{minimumFractionDigits:2})}`;
+            // คำนวณยอดรวมสุทธิ (รายรับรวมทั้งหมด = จ่ายแล้ว + ค้างจ่าย)
+            const totalGrossRev = totalPaidRev + totalUnpaidRev;
+            // กำไรสุทธิจริง = เงินที่เก็บได้แล้วจริงๆ - รายจ่ายจริง
+            const totalNetProfit = totalPaidRev - totalExp; 
 
+            // อัปเดตข้อมูลลงบนการ์ด Dashboard ด้านบน
+            document.getElementById('total-paid-revenue').innerText = `฿${totalPaidRev.toLocaleString(undefined,{minimumFractionDigits:2})}`;
+            document.getElementById('total-unpaid-revenue').innerText = `฿${totalUnpaidRev.toLocaleString(undefined,{minimumFractionDigits:2})}`;
+            document.getElementById('total-gross-revenue').innerText = `฿${totalGrossRev.toLocaleString(undefined,{minimumFractionDigits:2})}`;
+            document.getElementById('total-net-profit').innerText = `฿${totalNetProfit.toLocaleString(undefined,{minimumFractionDigits:2})}`;
+            document.getElementById('total-expense-sub').innerText = `รายจ่ายสะสม: ฿${totalExp.toLocaleString(undefined,{minimumFractionDigits:2})}`;
+
+            // เรนเดอร์การ์ดจำแนกข้อมูลแยกตามรายสาขา (แสดงแบบ 3 ยอดชัดเจน)
             const grid = document.getElementById('branch-cards-grid');
             if(grid) {
                 grid.innerHTML = '';
                 BRANCHES.forEach(b => {
-                    const profit = branchStats[b].rev - branchStats[b].exp;
+                    const stats = branchStats[b];
+                    stats.grossRev = stats.paidRev + stats.unpaidRev;
+                    const branchNetProfit = stats.paidRev - stats.exp; // กำไรเงินสดจริงของสาขานั้นๆ
+                    
                     grid.innerHTML += `
-                        <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-200">
-                            <h4 class="font-bold text-slate-800 text-sm mb-3 truncate">${b}</h4>
-                            <div class="space-y-1 text-xs text-slate-500">
-                                <div class="flex justify-between"><span>รายรับสาขา:</span><span class="text-emerald-600 font-bold">฿${branchStats[b].rev.toLocaleString()}</span></div>
-                                <div class="flex justify-between"><span>รายจ่ายรวม:</span><span class="text-rose-600 font-bold">฿${branchStats[b].exp.toLocaleString()}</span></div>
+                        <div class="bg-white p-6 rounded-2xl shadow-xs border border-slate-200 flex flex-col justify-between">
+                            <div>
+                                <div class="flex justify-between items-center mb-3">
+                                    <h4 class="font-bold text-slate-800 text-sm truncate">${b}</h4>
+                                    <span class="text-[10px] bg-slate-100 px-2 py-0.5 rounded text-slate-500 font-medium">สถิติสาขา</span>
+                                </div>
+                                <div class="space-y-2 text-xs">
+                                    <div class="flex justify-between border-b border-slate-50 pb-1">
+                                        <span class="text-slate-500">1. รายรับจริง (ชำระแล้ว):</span>
+                                        <span class="text-emerald-600 font-bold">฿${stats.paidRev.toLocaleString(undefined,{minimumFractionDigits:2})}</span>
+                                    </div>
+                                    <div class="flex justify-between border-b border-slate-50 pb-1">
+                                        <span class="text-slate-500">2. รายรับที่ยังไม่ได้รับ (ค้างจ่าย):</span>
+                                        <span class="text-amber-600 font-bold">฿${stats.unpaidRev.toLocaleString(undefined,{minimumFractionDigits:2})}</span>
+                                    </div>
+                                    <div class="flex justify-between border-b border-slate-50 pb-1 bg-slate-50/50 p-1 rounded font-medium">
+                                        <span class="text-slate-700">3. รายรับรวมสุทธิ:</span>
+                                        <span class="text-slate-900 font-bold">฿${stats.grossRev.toLocaleString(undefined,{minimumFractionDigits:2})}</span>
+                                    </div>
+                                    <div class="flex justify-between pt-1">
+                                        <span class="text-slate-400">รายจ่ายภายในสาขา:</span>
+                                        <span class="text-rose-600 font-semibold">฿${stats.exp.toLocaleString(undefined,{minimumFractionDigits:2})}</span>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="border-t border-slate-100 pt-2 mt-3 flex justify-between text-xs font-bold">
-                                <span>กำไรสุทธิ:</span><span class="${profit>=0?'text-teal-600':'text-rose-600'}">฿${profit.toLocaleString()}</span>
+                            <div class="border-t border-slate-100 pt-3 mt-4 flex justify-between items-center text-xs font-bold">
+                                <span class="text-slate-600">กำไรสุทธิจริง (อิงเงินสด):</span>
+                                <span class="${branchNetProfit >= 0 ? 'text-teal-600 text-sm' : 'text-rose-600 text-sm'}">
+                                    ฿${branchNetProfit.toLocaleString(undefined,{minimumFractionDigits:2})}
+                                </span>
                             </div>
                         </div>
                     `;
@@ -453,7 +510,6 @@
             });
         }
 
-        // ฟังก์ชันสลับหน้าต่างทำงานแบบปลอดภัยไร้กังวล
         function switchTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(el => {
                 el.classList.remove('block');
