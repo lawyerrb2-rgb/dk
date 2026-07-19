@@ -19,6 +19,10 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { font-family: 'Prompt', sans-serif; }
+        /* บังคับล้างระบบสีแปลกปลอมเฉพาะบริเวณพื้นที่กระดาษพิมพ์บิล ป้องกันปัญหา html2canvas แครช */
+        #bill-capture-area, #bill-capture-area * {
+            color-scheme: light !important;
+        }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 antialiased min-h-screen pb-12">
@@ -100,7 +104,6 @@
         <!-- ================= TAB 2: SALES & DEBTORS ================= -->
         <section id="tab-sales" class="tab-content hidden">
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <!-- ฟอร์มส่งข้อมูลขึ้นระบบคลาวด์ -->
                 <div class="bg-white p-6 rounded-2xl shadow-xs border border-slate-200 h-fit">
                     <h2 class="text-lg font-bold mb-4 text-slate-700"><i class="fa-solid fa-cloud-arrow-up mr-2 text-teal-500"></i>เพิ่มธุรกรรมใหม่เข้าฐานข้อมูล</h2>
                     <form id="transaction-form" onsubmit="handleTransactionSubmit(event)" class="space-y-4">
@@ -142,7 +145,6 @@
                     </form>
                 </div>
 
-                <!-- ตารางบันทึกสถานะค้างจ่าย -->
                 <div class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-xs border border-slate-200">
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
                         <h2 class="text-lg font-bold text-slate-700"><i class="fa-solid fa-database mr-2 text-cyan-500"></i>คลังข้อมูลลูกหนี้และสถานะค้างจ่าย</h2>
@@ -171,10 +173,10 @@
             </div>
         </section>
 
-        <!-- ================= TAB 3: BILLING GENERATOR (เพิ่มระบบสลับ VAT และแก้อัปโหลด/PDF) ================= -->
+        <!-- ================= TAB 3: BILLING GENERATOR ================= -->
         <section id="tab-billing" class="tab-content hidden">
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <!-- ส่วนปรับแต่งและจัดการไอเท็มน้ำแข็ง -->
+                <!-- ส่วนปรับแต่งโครงสร้างบิลและสินค้า -->
                 <div class="bg-white p-6 rounded-2xl shadow-xs border border-slate-200 space-y-4 h-fit max-h-[85vh] overflow-y-auto">
                     <h2 class="text-md font-bold text-teal-600 flex items-center gap-2 border-b border-slate-100 pb-2">
                         <i class="fa-solid fa-sliders"></i> 1. ตั้งค่าเอกสารหลัก
@@ -188,7 +190,7 @@
                         </select>
                     </div>
                     
-                    <!-- ส่วนปรับปรุงการอัปโหลดโลโก้ให้ชัดเจนมีปุ่มกด -->
+                    <!-- ส่วนปรับปรุงการอัปโหลดโลโก้โรงงานน้ำแข็ง -->
                     <div>
                         <label class="block text-xs font-semibold text-slate-500 mb-1">โลโก้โรงน้ำแข็งส่วนตัวของคุณ</label>
                         <div class="flex items-center gap-2">
@@ -200,7 +202,7 @@
                         </div>
                     </div>
 
-                    <!-- ระบบคำนวณภาษี เลือกเปิด/ปิด VAT ได้อิสระ -->
+                    <!-- สลับระบบเปิด/ปิดภาษีมูลค่าเพิ่ม (VAT 7%) -->
                     <div>
                         <label class="block text-xs font-semibold text-slate-500 mb-1">การคิดภาษีมูลค่าเพิ่ม (VAT 7%)</label>
                         <select id="bill-vat-toggle" onchange="renderBillItems()" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs focus:outline-teal-500">
@@ -218,7 +220,7 @@
                         <input type="text" id="bill-cust-name" value="ร้านอาหารริมหาดซีฟู้ด" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs focus:outline-teal-500" oninput="updateBillPreview()">
                     </div>
 
-                    <!-- ฟอร์มเพิ่มสินค้า -->
+                    <!-- การจัดหมวดหมู่รายการน้ำแข็ง -->
                     <h2 class="text-md font-bold text-teal-600 flex items-center gap-2 border-b border-slate-100 pt-2 pb-2">
                         <i class="fa-solid fa-cart-plus"></i> 2. จัดการรายการน้ำแข็งในบิล
                     </h2>
@@ -248,46 +250,47 @@
                     </div>
                 </div>
 
-                <!-- พรีวิวแผ่นกระดาษ A4 เสมือนจริง -->
+                <!-- พรีวิวแผ่นกระดาษ A4 เสมือนจริง (ปรับระบบสีพื้นหลังเพื่อรองรับ html2canvas) -->
                 <div class="lg:col-span-2 bg-slate-300 p-4 rounded-2xl overflow-x-auto flex justify-center">
-                    <div id="bill-capture-area" class="w-[794px] h-[1123px] bg-white p-12 shadow-xl relative text-slate-800 flex flex-col justify-between shrink-0">
+                    <div id="bill-capture-area" style="background-color: #ffffff; color: #1e293b;" class="w-[794px] h-[1123px] p-12 shadow-xl relative flex flex-col justify-between shrink-0">
                         
-                        <!-- ลายน้ำพื้นหลังส่วนตัว -->
+                        <!-- ลายน้ำกระดาษแบบรองรับการสลับซ่อนรูปภาพดั้งเดิมอย่างปลอดภัย -->
                         <div id="bill-watermark" class="absolute inset-0 flex items-center justify-center opacity-[0.05] pointer-events-none z-0 p-32">
                             <i id="default-wm-icon" class="fa-solid fa-cubes text-[280px] text-cyan-400"></i>
                             <img id="custom-wm-img" class="hidden w-full max-w-sm object-contain" src="" alt="Watermark">
                         </div>
                         
                         <div class="relative z-10">
-                            <div class="flex justify-between items-start border-b-2 border-teal-600 pb-6">
+                            <!-- ส่วนหัวบิลเอกสาร -->
+                            <div class="flex justify-between items-start border-b-2 border-teal-600 pb-6" style="border-bottom-color: #0d9488;">
                                 <div class="flex items-center gap-3">
-                                    <div id="factory-logo-zone" class="w-14 h-14 rounded-xl bg-teal-600 flex items-center justify-center text-white text-3xl overflow-hidden">
+                                    <div id="factory-logo-zone" class="w-14 h-14 rounded-xl bg-teal-600 flex items-center justify-center text-white text-3xl overflow-hidden" style="background-color: #0d9488; color: #ffffff;">
                                         <i id="default-logo-icon" class="fa-solid fa-snowflake"></i>
                                         <img id="custom-logo-img" class="hidden w-full h-full object-cover" src="" alt="Logo">
                                     </div>
                                     <div>
-                                        <h3 id="preview-factory-name" class="font-bold text-lg text-slate-900">โรงน้ำแข็ง ดี เค</h3>
-                                        <p class="text-xs text-slate-500 mt-0.5">ระบบออกเอกสารและคำนวณภาษีอัตโนมัติคลาวด์</p>
+                                        <h3 id="preview-factory-name" class="font-bold text-lg text-slate-900" style="color: #0f172a;">โรงน้ำแข็ง ดี เค</h3>
+                                        <p class="text-xs text-slate-500 mt-0.5" style="color: #64748b;">ระบบออกเอกสารและคำนวณภาษีอัตโนมัติคลาวด์</p>
                                     </div>
                                 </div>
                                 <div class="text-right">
-                                    <h2 id="preview-bill-type" class="text-2xl font-black text-teal-600">ใบวางบิล</h2>
-                                    <p class="text-[10px] text-slate-400 mt-1 font-mono">วันที่ออกเอกสาร: 19 กรกฎาคม 2026</p>
+                                    <h2 id="preview-bill-type" class="text-2xl font-black text-teal-600" style="color: #0d9488;">ใบวางบิล</h2>
+                                    <p class="text-[10px] text-slate-400 mt-1 font-mono" style="color: #94a3b8;">วันที่ออกเอกสาร: 19 กรกฎาคม 2026</p>
                                 </div>
                             </div>
 
-                            <div class="my-5 text-xs bg-slate-50 p-3.5 rounded-xl border border-slate-100 flex justify-between">
+                            <div class="my-5 text-xs bg-slate-50 p-3.5 rounded-xl border border-slate-100 flex justify-between" style="background-color: #f8fafc; border-color: #f1f5f9;">
                                 <div>
-                                    <p class="font-bold text-slate-400 text-[10px] uppercase mb-0.5">ลูกค้าผู้รับเอกสาร</p>
-                                    <p id="preview-cust-name" class="font-semibold text-slate-900 text-sm">ร้านอาหารริมหาดซีฟู้ด</p>
+                                    <p class="font-bold text-slate-400 text-[10px] uppercase mb-0.5" style="color: #94a3b8;">ลูกค้าผู้รับเอกสาร</p>
+                                    <p id="preview-cust-name" class="font-semibold text-slate-900 text-sm" style="color: #0f172a;">ร้านอาหารริมหาดซีฟู้ด</p>
                                 </div>
-                                <div class="text-right font-mono text-[10px] text-slate-400">
+                                <div class="text-right font-mono text-[10px] text-slate-400" style="color: #94a3b8;">
                                     <p>เลขที่: ICE-DOC-2026-99</p>
                                 </div>
                             </div>
 
                             <table class="w-full text-xs text-left mt-6">
-                                <thead class="bg-teal-600 text-white text-[10px] uppercase">
+                                <thead class="bg-teal-600 text-white text-[10px] uppercase" style="background-color: #0d9488; color: #ffffff;">
                                     <tr>
                                         <th class="p-2.5 rounded-l-lg text-center w-12">#</th>
                                         <th class="p-2.5">รายการชนิดน้ำแข็ง</th>
@@ -297,36 +300,35 @@
                                         <th class="p-2.5 text-center w-12 print:hidden">ลบ</th>
                                     </tr>
                                 </thead>
-                                <tbody id="bill-items-tbody" class="divide-y divide-slate-100"></tbody>
+                                <tbody id="bill-items-tbody" class="divide-y divide-slate-100" style="border-color: #f1f5f9;"></tbody>
                             </table>
                         </div>
 
-                        <!-- ท้ายกระดาษสรุปงบเงิน -->
+                        <!-- ท้ายเอกสารและคำนวณเงินสดสุทธิ -->
                         <div class="relative z-10">
-                            <div class="border-t border-slate-200 pt-4 flex justify-between items-start">
-                                <div class="max-w-xs text-[10px] text-slate-400">
+                            <div class="border-t border-slate-200 pt-4 flex justify-between items-start" style="border-top-color: #e2e8f0;">
+                                <div class="max-w-xs text-[10px] text-slate-400" style="color: #94a3b8;">
                                     <p class="font-bold mb-0.5">หมายเหตุ:</p>
                                     <p>ราคานี้รวมค่าบริการจัดส่งสินค้าเรียบร้อยแล้ว กรุณาลงนามรับมอบของและชำระเงินตามระยะเวลาเครดิตที่กำหนด</p>
                                 </div>
-                                <div class="w-60 bg-slate-50 p-3 rounded-xl border border-slate-100 text-xs space-y-1 font-medium">
-                                    <div class="flex justify-between text-slate-500"><span>รวมเป็นเงิน:</span><span id="bill-subtotal">฿0.00</span></div>
-                                    <!-- ตัวแสดงผล VAT 7% ปิดตัวเลขได้ไดนามิก -->
-                                    <div id="vat-row-container" class="flex justify-between text-slate-500"><span>ภาษีมูลค่าเพิ่ม (7%):</span><span id="bill-vat">฿0.00</span></div>
-                                    <div class="flex justify-between font-bold text-teal-600 text-sm border-t border-dashed border-slate-200 pt-1 mt-1">
+                                <div class="w-60 bg-slate-50 p-3 rounded-xl border border-slate-100 text-xs space-y-1 font-medium" style="background-color: #f8fafc; border-color: #f1f5f9;">
+                                    <div class="flex justify-between text-slate-500" style="color: #64748b;"><span>รวมเป็นเงิน:</span><span id="bill-subtotal" style="color: #0f172a;">฿0.00</span></div>
+                                    <div id="vat-row-container" class="flex justify-between text-slate-500" style="color: #64748b;"><span>ภาษีมูลค่าเพิ่ม (7%):</span><span id="bill-vat" style="color: #0f172a;">฿0.00</span></div>
+                                    <div class="flex justify-between font-bold text-teal-600 text-sm border-t border-dashed border-slate-200 pt-1 mt-1" style="color: #0d9488; border-top-color: #e2e8f0;">
                                         <span>ยอดสุทธิทั้งสิ้น:</span><span id="bill-total">฿0.00</span>
                                     </div>
                                 </div>
                             </div>
 
                             <div class="grid grid-cols-2 gap-8 mt-10 text-center text-xs">
-                                <div>
+                                <div class="border-t border-slate-200 pt-4" style="border-top-color: #e2e8f0;">
                                     <p>......................................................</p>
-                                    <p class="text-[10px] text-slate-400 mt-1">เจ้าหน้าที่ผู้รับมอบน้ำแข็ง</p>
+                                    <p class="text-[10px] text-slate-400 mt-1" style="color: #94a3b8;">เจ้าหน้าที่ผู้รับมอบน้ำแข็ง</p>
                                 </div>
-                                <div>
-                                    <i class="fa-solid fa-stamp text-teal-700 text-3xl opacity-40 block mb-1"></i>
+                                <div class="border-t border-slate-200 pt-4" style="border-top-color: #e2e8f0;">
+                                    <i class="fa-solid fa-stamp text-teal-700 text-3xl opacity-40 block mb-1" style="color: #0f766e;"></i>
                                     <p>......................................................</p>
-                                    <p class="text-[10px] text-slate-400 mt-1">ผู้มีอำนาจลงนาม / ฝ่ายบัญชีโรงงาน</p>
+                                    <p class="text-[10px] text-slate-400 mt-1" style="color: #94a3b8;">ผู้มีอำนาจลงนาม / ฝ่ายบัญชีโรงงาน</p>
                                 </div>
                             </div>
                         </div>
@@ -559,7 +561,6 @@
             renderBillItems();
         }
 
-        // ประมวลผลตารางพร้อมเงื่อนไขคำนวณสวิตช์ปิด/เปิด VAT 7%
         function renderBillItems() {
             const tbody = document.getElementById('bill-items-tbody');
             if(!tbody) return;
@@ -571,12 +572,12 @@
                 subtotal += totalItemPrice;
 
                 tbody.innerHTML += `
-                    <tr class="text-slate-700">
-                        <td class="p-2.5 text-center font-mono text-slate-400">${String(index + 1).padStart(2, '0')}</td>
-                        <td class="p-2.5 font-medium text-slate-900">${item.ice}</td>
+                    <tr style="color: #334155;">
+                        <td class="p-2.5 text-center font-mono" style="color: #94a3b8;">${String(index + 1).padStart(2, '0')}</td>
+                        <td class="p-2.5 font-medium" style="color: #0f172a;">${item.ice}</td>
                         <td class="p-2.5 text-right font-mono">${item.qty.toLocaleString()}</td>
                         <td class="p-2.5 text-right font-mono">฿${item.price.toLocaleString(undefined,{minimumFractionDigits:2})}</td>
-                        <td class="p-2.5 text-right font-mono font-semibold text-slate-900">฿${totalItemPrice.toLocaleString(undefined,{minimumFractionDigits:2})}</td>
+                        <td class="p-2.5 text-right font-mono font-semibold" style="color: #0f172a;">฿${totalItemPrice.toLocaleString(undefined,{minimumFractionDigits:2})}</td>
                         <td class="p-2.5 text-center print:hidden">
                             <button onclick="removeItemFromBill(${index})" class="text-rose-400 hover:text-rose-600 transition"><i class="fa-solid fa-square-minus text-base"></i></button>
                         </td>
@@ -589,9 +590,9 @@
             
             if (vatToggle === 'include') {
                 vat = subtotal * 0.07;
-                document.getElementById('vat-row-container').classList.remove('hidden');
+                document.getElementById('vat-row-container').style.display = 'flex';
             } else {
-                document.getElementById('vat-row-container').classList.add('hidden');
+                document.getElementById('vat-row-container').style.display = 'none';
             }
 
             const grandTotal = subtotal + vat;
@@ -601,29 +602,32 @@
             document.getElementById('bill-total').innerText = `฿${grandTotal.toLocaleString(undefined,{minimumFractionDigits:2})}`;
         }
 
-        // ระบบแปลงและจัดเตรียมข้อมูลภาพแบบเสรี (ตัดปัญหาเรื่อง CORS ป้องกันปุ่ม PDF ค้าง)
+        // แก้ไขปัญหารูปภาพดั้งเดิมซ้อนทับ: สั่งถอนและซ่อนองค์ประกอบ Icon ตัวเดิมทิ้งทันทีเมื่อเลือกรูปใหม่
         function handleLogoUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
 
-            // อัปเดตชื่อไฟล์บอกสถานะข้างปุ่ม
             document.getElementById('file-chosen-text').innerText = file.name;
 
             const reader = new FileReader();
             reader.onload = function(e) {
                 const imageUrl = e.target.result;
 
-                // หัวบิลหลัก
-                document.getElementById('default-logo-icon').classList.add('hidden');
+                // หัวบิล: ซ่อนไอคอนเริ่มต้น แล้วแสดงรูปภาพแทน
+                const defaultLogoIcon = document.getElementById('default-logo-icon');
+                if(defaultLogoIcon) defaultLogoIcon.style.display = 'none';
+                
                 const logoImg = document.getElementById('custom-logo-img');
                 logoImg.src = imageUrl;
-                logoImg.classList.remove('hidden');
+                logoImg.style.display = 'block';
 
-                // ลายน้ำแผ่นกระดาษ
-                document.getElementById('default-wm-icon').classList.add('hidden');
+                // ลายน้ำกระดาษ: ซ่อนไอคอนเริ่มต้น แล้วแสดงรูปภาพแทน
+                const defaultWmIcon = document.getElementById('default-wm-icon');
+                if(defaultWmIcon) defaultWmIcon.style.display = 'none';
+                
                 const wmImg = document.getElementById('custom-wm-img');
                 wmImg.src = imageUrl;
-                wmImg.classList.remove('hidden');
+                wmImg.style.display = 'block';
             };
             reader.readAsDataURL(file);
         }
@@ -637,14 +641,13 @@
             if(activeBtn) { activeBtn.classList.remove('bg-white/10'); activeBtn.classList.add('bg-white/20'); }
         }
 
-        // ปรับปรุงฟังก์ชันพิมพ์ PDF ให้มีประสิทธิภาพสูงสุด ไม่ติดขัดเรื่องรูปภาพความปลอดภัย
         async function downloadDocumentPDF() {
             showLoading(true);
             try {
                 const { jsPDF } = window.jspdf;
                 const element = document.getElementById('bill-capture-area');
 
-                // ปรับแต่งค่าความเสถียรของ html2canvas ให้ข้ามการดึงไฟล์เครือข่าย ป้องกันเบราว์เซอร์หยุดนิ่ง
+                // บังคับสไตล์แบบ Inline ชั่วคราวก่อนแปลงภาพ เพื่อแก้ปัญหา color แครชของเบราว์เซอร์
                 const canvas = await html2canvas(element, {
                     scale: 2,
                     useCORS: true,
