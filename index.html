@@ -12,13 +12,44 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- PDF Libraries -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <!-- Supabase JS Library -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { font-family: 'Prompt', sans-serif; }
+
+        /* 🖨️ ชุดคำสั่งจัดระเบียบสำหรับสั่งพิมพ์/เซฟ PDF (Print Media Queries) */
+        @media print {
+            /* ซ่อนส่วนประกอบอื่น ๆ ทั้งหมดที่ไม่ใช่ใบเสร็จ */
+            nav, main > div > div:first-child, .print\:hidden {
+                display: none !important;
+            }
+            body {
+                background-color: #ffffff !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            main {
+                max-width: 100% !important;
+                width: 100% !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            /* ปลดบล็อกพื้นที่จัดเก็บกระดาษให้แสดงเต็มหน้าจอ A4 */
+            .lg\:col-span-2 {
+                width: 100% !important;
+                padding: 0 !important;
+                background: none !important;
+            }
+            #bill-capture-area {
+                box-shadow: none !important;
+                border: none !important;
+                margin: 0 auto !important;
+                padding: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                height: auto !important;
+            }
+        }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 antialiased min-h-screen pb-12">
@@ -172,7 +203,7 @@
         <!-- ================= TAB 3: BILLING GENERATOR ================= -->
         <section id="tab-billing" class="tab-content hidden">
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <!-- ส่วนปรับแต่งหลัก -->
+                <!-- ส่วนตั้งค่า -->
                 <div class="bg-white p-6 rounded-2xl shadow-xs border border-slate-200 space-y-4 h-fit max-h-[85vh] overflow-y-auto">
                     <h2 class="text-md font-bold text-teal-600 flex items-center gap-2 border-b border-slate-100 pb-2">
                         <i class="fa-solid fa-sliders"></i> 1. ตั้งค่าเอกสารหลัก
@@ -214,7 +245,6 @@
                         <input type="text" id="bill-cust-name" value="ร้านอาหารริมหาดซีฟู้ด" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs focus:outline-teal-500" oninput="updateBillPreview()">
                     </div>
 
-                    <!-- การจัดการสินค้าบนบิล -->
                     <h2 class="text-md font-bold text-teal-600 flex items-center gap-2 border-b border-slate-100 pt-2 pb-2">
                         <i class="fa-solid fa-cart-plus"></i> 2. จัดการรายการน้ำแข็งในบิล
                     </h2>
@@ -238,97 +268,95 @@
                         </button>
                     </div>
 
+                    <!-- ปรับฟังก์ชันปุ่มเป็นระบบปริ้นท์ PDF ตรงความต้องการ -->
                     <div class="pt-2 flex gap-2 border-t border-slate-100">
-                        <button onclick="window.print()" class="flex-1 bg-slate-800 hover:bg-slate-900 text-white font-medium text-xs py-2.5 rounded-lg transition"><i class="fa-solid fa-print mr-1"></i>พิมพ์เอกสาร</button>
-                        <button onclick="downloadDocumentPDF()" class="flex-1 bg-teal-600 hover:bg-teal-700 text-white font-medium text-xs py-2.5 rounded-lg transition"><i class="fa-solid fa-file-pdf mr-1"></i>เซฟเป็น PDF</button>
+                        <button onclick="downloadDocumentPDF()" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-medium text-sm py-3 rounded-xl shadow-md transition flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-file-pdf text-base"></i> สั่งพิมพ์ / เซฟเป็น PDF ตรงนี้ได้เลย
+                        </button>
                     </div>
                 </div>
 
                 <!-- พรีวิวพื้นที่กระดาษ A4 เสมือนจริง -->
                 <div class="lg:col-span-2 bg-slate-300 p-4 rounded-2xl overflow-x-auto flex justify-center">
-                    <!-- ครอบพื้นที่ A4 เว้ารองรับการโคลนรันระบบสีพื้นฐาน -->
-                    <div id="bill-container-wrapper">
-                        <div id="bill-capture-area" style="background-color: #ffffff; color: #1e293b; font-family: 'Prompt', sans-serif;" class="w-[794px] h-[1123px] p-12 shadow-xl relative flex flex-col justify-between shrink-0">
-                            
-                            <!-- โครงสร้างระบบลายน้ำแบบควบคุมเด็ดขาด -->
-                            <div id="bill-watermark" class="absolute inset-0 flex items-center justify-center opacity-[0.05] pointer-events-none z-0 p-32">
-                                <i id="default-wm-icon" class="fa-solid fa-cubes text-[280px] text-cyan-400"></i>
-                                <img id="custom-wm-img" class="hidden w-full max-w-sm object-contain" src="" alt="Watermark">
-                            </div>
-                            
-                            <div class="relative z-10">
-                                <!-- โครงสร้างหัวบิล -->
-                                <div class="flex justify-between items-start border-b-2 border-teal-600 pb-6" style="border-bottom: 2px solid #0d9488;">
-                                    <div class="flex items-center gap-3">
-                                        <div id="factory-logo-zone" class="w-14 h-14 rounded-xl bg-teal-600 flex items-center justify-center text-white text-3xl overflow-hidden" style="background-color: #0d9488; color: #ffffff;">
-                                            <i id="default-logo-icon" class="fa-solid fa-snowflake"></i>
-                                            <img id="custom-logo-img" class="hidden w-full h-full object-cover" src="" alt="Logo">
-                                        </div>
-                                        <div>
-                                            <h3 id="preview-factory-name" class="font-bold text-lg text-slate-900" style="color: #0f172a; margin: 0;">โรงน้ำแข็ง ดี เค</h3>
-                                            <p class="text-xs text-slate-500 mt-0.5" style="color: #64748b; margin: 0;">ระบบออกเอกสารและคำนวณภาษีอัตโนมัติคลาวด์</p>
-                                        </div>
-                                    </div>
-                                    <div class="text-right">
-                                        <h2 id="preview-bill-type" class="text-2xl font-black text-teal-600" style="color: #0d9488; margin: 0;">ใบวางบิล</h2>
-                                        <p class="text-[10px] text-slate-400 mt-1 font-mono" style="color: #94a3b8; margin: 0;">วันที่ออกเอกสาร: 19 กรกฎาคม 2026</p>
-                                    </div>
-                                </div>
-
-                                <div class="my-5 text-xs bg-slate-50 p-3.5 rounded-xl border border-slate-100 flex justify-between" style="background-color: #f8fafc; border: 1px solid #f1f5f9; padding: 14px; border-radius: 12px; margin-top: 20px; margin-bottom: 20px;">
-                                    <div>
-                                        <p class="font-bold text-slate-400 text-[10px] uppercase mb-0.5" style="color: #94a3b8; margin: 0;">ลูกค้าผู้รับเอกสาร</p>
-                                        <p id="preview-cust-name" class="font-semibold text-slate-900 text-sm" style="color: #0f172a; margin: 0;">ร้านอาหารริมหาดซีฟู้ด</p>
-                                    </div>
-                                    <div class="text-right font-mono text-[10px] text-slate-400" style="color: #94a3b8;">
-                                        <p style="margin: 0;">เลขที่: ICE-DOC-2026-99</p>
-                                    </div>
-                                </div>
-
-                                <table class="w-full text-xs text-left mt-6" style="width: 100%; border-collapse: collapse; margin-top: 24px;">
-                                    <thead class="bg-teal-600 text-white text-[10px] uppercase" style="background-color: #0d9488; color: #ffffff;">
-                                        <tr>
-                                            <th class="p-2.5 rounded-l-lg text-center w-12" style="padding: 10px;">#</th>
-                                            <th class="p-2.5" style="padding: 10px;">รายการชนิดน้ำแข็ง</th>
-                                            <th class="p-2.5 text-right w-24" style="padding: 10px; text-align: right;">จำนวน</th>
-                                            <th class="p-2.5 text-right w-28" style="padding: 10px; text-align: right;">ราคาต่อหน่วย</th>
-                                            <th class="p-2.5 text-right w-32 rounded-r-lg" style="padding: 10px; text-align: right;">รวมเงิน (บาท)</th>
-                                            <th class="p-2.5 text-center w-12 print:hidden" style="padding: 10px; text-align: center;">ลบ</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="bill-items-tbody" class="divide-y divide-slate-100"></tbody>
-                                </table>
-                            </div>
-
-                            <!-- ส่วนสรุปเงินรวมท้ายบิล -->
-                            <div class="relative z-10">
-                                <div class="border-t border-slate-200 pt-4 flex justify-between items-start" style="border-top: 1px solid #e2e8f0; padding-top: 16px; margin-top: 20px;">
-                                    <div class="max-w-xs text-[10px] text-slate-400" style="color: #94a3b8; max-w: 320px;">
-                                        <p class="font-bold mb-0.5" style="margin: 0;">หมายเหตุ:</p>
-                                        <p style="margin: 0;">ราคานี้รวมค่าบริการจัดส่งสินค้าเรียบร้อยแล้ว กรุณาลงนามรับมอบของและชำระเงินตามระยะเวลาเครดิตที่กำหนด</p>
-                                    </div>
-                                    <div class="w-60 bg-slate-50 p-3 rounded-xl border border-slate-100 text-xs space-y-1 font-medium" style="background-color: #f8fafc; border: 1px solid #f1f5f9; width: 240px; border-radius: 12px; padding: 12px;">
-                                        <div class="flex justify-between text-slate-500" style="display: flex; justify-content: space-between; color: #64748b;"><span>รวมเป็นเงิน:</span><span id="bill-subtotal" style="color: #0f172a;">฿0.00</span></div>
-                                        <div id="vat-row-container" class="flex justify-between text-slate-500" style="display: flex; justify-content: space-between; color: #64748b;"><span>ภาษีมูลค่าเพิ่ม (7%):</span><span id="bill-vat" style="color: #0f172a;">฿0.00</span></div>
-                                        <div class="flex justify-between font-bold text-teal-600 text-sm border-t border-dashed border-slate-200 pt-1 mt-1" style="display: flex; justify-content: space-between; font-weight: bold; color: #0d9488; border-top: 1px dashed #e2e8f0; padding-top: 4px; margin-top: 4px;">
-                                            <span>ยอดสุทธิทั้งสิ้น:</span><span id="bill-total">฿0.00</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="grid grid-cols-2 gap-8 mt-10 text-center text-xs" style="display: grid; grid-template-cols: 1fr 1fr; gap: 32px; margin-top: 40px; text-align: center;">
-                                    <div class="border-t border-slate-200 pt-4" style="border-top: 1px solid #e2e8f0; padding-top: 16px;">
-                                        <p style="margin: 0;">......................................................</p>
-                                        <p class="text-[10px] text-slate-400 mt-1" style="color: #94a3b8; margin-top: 4px; margin-bottom: 0;">เจ้าหน้าที่ผู้รับมอบน้ำแข็ง</p>
-                                    </div>
-                                    <div class="border-t border-slate-200 pt-4" style="border-top: 1px solid #e2e8f0; padding-top: 16px;">
-                                        <p style="margin: 0;">......................................................</p>
-                                        <p class="text-[10px] text-slate-400 mt-1" style="color: #94a3b8; margin-top: 4px; margin-bottom: 0;">ผู้มีอำนาจลงนาม / ฝ่ายบัญชีโรงงาน</p>
-                                    </div>
-                                </div>
-                            </div>
-
+                    <div id="bill-capture-area" class="w-[794px] h-[1123px] bg-white p-12 shadow-xl relative text-slate-800 flex flex-col justify-between shrink-0">
+                        
+                        <!-- โครงสร้างระบบลายน้ำแบบไม่ซ้อนทับ -->
+                        <div id="bill-watermark" class="absolute inset-0 flex items-center justify-center opacity-[0.05] pointer-events-none z-0 p-32">
+                            <i id="default-wm-icon" class="fa-solid fa-cubes text-[280px] text-cyan-400"></i>
+                            <img id="custom-wm-img" class="hidden w-full max-w-sm object-contain" src="" alt="Watermark">
                         </div>
+                        
+                        <div class="relative z-10">
+                            <div class="flex justify-between items-start border-b-2 border-teal-600 pb-6">
+                                <div class="flex items-center gap-3">
+                                    <div id="factory-logo-zone" class="w-14 h-14 rounded-xl bg-teal-600 flex items-center justify-center text-white text-3xl overflow-hidden">
+                                        <i id="default-logo-icon" class="fa-solid fa-snowflake"></i>
+                                        <img id="custom-logo-img" class="hidden w-full h-full object-cover" src="" alt="Logo">
+                                    </div>
+                                    <div>
+                                        <h3 id="preview-factory-name" class="font-bold text-lg text-slate-900">โรงน้ำแข็ง ดี เค</h3>
+                                        <p class="text-xs text-slate-500 mt-0.5">ระบบออกเอกสารและคำนวณภาษีอัตโนมัติคลาวด์</p>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <h2 id="preview-bill-type" class="text-2xl font-black text-teal-600">ใบวางบิล</h2>
+                                    <p class="text-[10px] text-slate-400 mt-1 font-mono">วันที่ออกเอกสาร: 19 กรกฎาคม 2026</p>
+                                </div>
+                            </div>
+
+                            <div class="my-5 text-xs bg-slate-50 p-3.5 rounded-xl border border-slate-100 flex justify-between">
+                                <div>
+                                    <p class="font-bold text-slate-400 text-[10px] uppercase mb-0.5">ลูกค้าผู้รับเอกสาร</p>
+                                    <p id="preview-cust-name" class="font-semibold text-slate-900 text-sm">ร้านอาหารริมหาดซีฟู้ด</p>
+                                </div>
+                                <div class="text-right font-mono text-[10px] text-slate-400">
+                                    <p>เลขที่: ICE-DOC-2026-99</p>
+                                </div>
+                            </div>
+
+                            <table class="w-full text-xs text-left mt-6">
+                                <thead class="bg-teal-600 text-white text-[10px] uppercase">
+                                    <tr>
+                                        <th class="p-2.5 rounded-l-lg text-center w-12">#</th>
+                                        <th class="p-2.5">รายการชนิดน้ำแข็ง</th>
+                                        <th class="p-2.5 text-right w-24">จำนวน</th>
+                                        <th class="p-2.5 text-right w-28">ราคาต่อหน่วย</th>
+                                        <th class="p-2.5 text-right w-32 rounded-r-lg">รวมเงิน (บาท)</th>
+                                        <th class="p-2.5 text-center w-12 print:hidden">ลบ</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="bill-items-tbody" class="divide-y divide-slate-100"></tbody>
+                            </table>
+                        </div>
+
+                        <div class="relative z-10">
+                            <div class="border-t border-slate-200 pt-4 flex justify-between items-start">
+                                <div class="max-w-xs text-[10px] text-slate-400">
+                                    <p class="font-bold mb-0.5">หมายเหตุ:</p>
+                                    <p>ราคานี้รวมค่าบริการจัดส่งสินค้าเรียบร้อยแล้ว กรุณาลงนามรับมอบของและชำระเงินตามระยะเวลาเครดิตที่กำหนด</p>
+                                </div>
+                                <div class="w-60 bg-slate-50 p-3 rounded-xl border border-slate-100 text-xs space-y-1 font-medium">
+                                    <div class="flex justify-between text-slate-500"><span>รวมเป็นเงิน:</span><span id="bill-subtotal">฿0.00</span></div>
+                                    <div id="vat-row-container" class="flex justify-between text-slate-500"><span>ภาษีมูลค่าเพิ่ม (7%):</span><span id="bill-vat">฿0.00</span></div>
+                                    <div class="flex justify-between font-bold text-teal-600 text-sm border-t border-dashed border-slate-200 pt-1 mt-1">
+                                        <span>ยอดสุทธิทั้งสิ้น:</span><span id="bill-total">฿0.00</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-8 mt-10 text-center text-xs">
+                                <div>
+                                    <p>......................................................</p>
+                                    <p class="text-[10px] text-slate-400 mt-1">เจ้าหน้าที่ผู้รับมอบน้ำแข็ง</p>
+                                </div>
+                                <div>
+                                    <i class="fa-solid fa-stamp text-teal-700 text-3xl opacity-40 block mb-1"></i>
+                                    <p>......................................................</p>
+                                    <p class="text-[10px] text-slate-400 mt-1">ผู้มีอำนาจลงนาม / ฝ่ายบัญชีโรงงาน</p>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
             </div>
@@ -568,13 +596,13 @@
                 subtotal += totalItemPrice;
 
                 tbody.innerHTML += `
-                    <tr style="color: #334155; border-bottom: 1px solid #f1f5f9;">
-                        <td class="p-2.5 text-center font-mono" style="padding: 10px; text-align: center; color: #94a3b8;">${String(index + 1).padStart(2, '0')}</td>
-                        <td class="p-2.5 font-medium" style="padding: 10px; color: #0f172a;">${item.ice}</td>
-                        <td class="p-2.5 text-right font-mono" style="padding: 10px; text-align: right;">${item.qty.toLocaleString()}</td>
-                        <td class="p-2.5 text-right font-mono" style="padding: 10px; text-align: right;">฿${item.price.toLocaleString(undefined,{minimumFractionDigits:2})}</td>
-                        <td class="p-2.5 text-right font-mono font-semibold" style="padding: 10px; text-align: right; color: #0f172a;">฿${totalItemPrice.toLocaleString(undefined,{minimumFractionDigits:2})}</td>
-                        <td class="p-2.5 text-center print:hidden" style="padding: 10px; text-align: center;">
+                    <tr class="text-slate-700">
+                        <td class="p-2.5 text-center font-mono text-slate-400">${String(index + 1).padStart(2, '0')}</td>
+                        <td class="p-2.5 font-medium text-slate-900">${item.ice}</td>
+                        <td class="p-2.5 text-right font-mono">${item.qty.toLocaleString()}</td>
+                        <td class="p-2.5 text-right font-mono">฿${item.price.toLocaleString(undefined,{minimumFractionDigits:2})}</td>
+                        <td class="p-2.5 text-right font-mono font-semibold text-slate-900">฿${totalItemPrice.toLocaleString(undefined,{minimumFractionDigits:2})}</td>
+                        <td class="p-2.5 text-center print:hidden">
                             <button onclick="removeItemFromBill(${index})" class="text-rose-400 hover:text-rose-600 transition"><i class="fa-solid fa-square-minus text-base"></i></button>
                         </td>
                     </tr>
@@ -598,7 +626,6 @@
             document.getElementById('bill-total').innerText = `฿${grandTotal.toLocaleString(undefined,{minimumFractionDigits:2})}`;
         }
 
-        // 🖼️ แก้ไขปัญหาโลโก้/ลายน้ำเก่าซ้อนทับแบบปิดสนิท
         function handleLogoUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -609,7 +636,7 @@
             reader.onload = function(e) {
                 const imageUrl = e.target.result;
 
-                // หัวบิล: ซ่อนไอคอนเริ่มต้น แล้วแสดงรูปภาพแทนแบบล้างค่าซ้อนทับ
+                // หัวบิล
                 const defaultLogoIcon = document.getElementById('default-logo-icon');
                 if(defaultLogoIcon) defaultLogoIcon.style.setProperty('display', 'none', 'important');
                 
@@ -617,7 +644,7 @@
                 logoImg.src = imageUrl;
                 logoImg.style.setProperty('display', 'block', 'important');
 
-                // ลายน้ำกระดาษ: ซ่อนไอคอนเริ่มต้น แล้วแสดงรูปภาพแทนแบบล้างค่าซ้อนทับ
+                // ลายน้ำ
                 const defaultWmIcon = document.getElementById('default-wm-icon');
                 if(defaultWmIcon) defaultWmIcon.style.setProperty('display', 'none', 'important');
                 
@@ -637,52 +664,11 @@
             if(activeBtn) { activeBtn.classList.remove('bg-white/10'); activeBtn.classList.add('bg-white/20'); }
         }
 
-        // 🚀 ฟังก์ชันดาวน์โหลด PDF นวัตกรรมใหม่: ตัดการดึงระบบสัญญานสีแปลกปลอม (oklch) ออกจากหน้าหลักแบบถาวร
-        async function downloadDocumentPDF() {
-            showLoading(true);
-            try {
-                const { jsPDF } = window.jspdf;
-                const originalElement = document.getElementById('bill-capture-area');
-
-                // ทำการโคลนแผ่นกระดาษบิลออกมาแบบลอยตัวเป็นชิ้นงานเดี่ยวภายนอก เพื่อไม่ให้ไลบรารีไปสแกนโดนสี oklch ของหน้าหลัก
-                const clonedElement = originalElement.cloneNode(true);
-                
-                // ตั้งค่าสไตล์ล้างค่าแปรผันของเบราว์เซอร์ให้กลายเป็นโมเดลภาพขาว-ใสแบบคลาสสิก
-                clonedElement.style.position = 'fixed';
-                clonedElement.style.top = '-9999px';
-                clonedElement.style.left = '-9999px';
-                clonedElement.style.display = 'flex';
-                clonedElement.style.backgroundColor = '#ffffff';
-                
-                document.body.appendChild(clonedElement);
-
-                // สั่งให้ html2canvas สแกนเฉพาะกล่องเดี่ยวภายนอกที่โคลนออกมาแล้วเท่านั้น
-                const canvas = await html2canvas(clonedElement, {
-                    scale: 2,
-                    useCORS: true,
-                    allowTaint: false,
-                    logging: false,
-                    backgroundColor: '#ffffff'
-                });
-
-                // ลบกล่องโคลนทิ้งหลังใช้งานเสร็จเพื่อไม่ให้รกหน้าจอ
-                document.body.removeChild(clonedElement);
-
-                const imgData = canvas.toDataURL('image/png');
-                const pdf = new jsPDF('p', 'mm', 'a4');
-                const imgWidth = 210;
-                const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-                pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-                const docName = document.getElementById('bill-type').value;
-                const custName = document.getElementById('bill-cust-name').value;
-                
-                pdf.save(`${docName}_${custName}.pdf`);
-            } catch (err) {
-                alert("เกิดข้อผิดพลาดในการสร้างไฟล์ PDF: " + err.message);
-            } finally {
-                showLoading(false);
-            }
+        // ⚡ ปลดล็อกทางตันระบบสี: สั่งเรียกคำสั่งพิมพ์หน้าต่างด่วนของเบราว์เซอร์ ซึ่งรองรับ CSS4 แบบ 100%
+        function downloadDocumentPDF() {
+            // เรียกคำสั่งพิมพ์ของระบบปฏิบัติการขึ้นมา 
+            // แนะนำให้เลือกปลายทาง (Destination) เป็น "Save as PDF" หรือ "บันทึกเป็น PDF" ครับ
+            window.print();
         }
     </script>
 </body>
